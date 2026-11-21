@@ -1,0 +1,27 @@
+name: Build and publish Windows release
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [VERSION]
+permissions:
+  contents: write
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and validate
+        shell: powershell
+        run: .\scripts\build.ps1 -Test
+      - name: Publish verified artifacts
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = (Get-Content -Raw VERSION).Trim()
+          if ($v -notmatch '^\d+\.\d+\.\d+$') { throw 'Bad version' }
+          $compiled = (Get-Item bin/ForeverHiveExchange.exe).VersionInfo.FileVersion
+          if ([version]$compiled -ne [version]("$v.0")) { throw 'Source and release versions differ' }
+          gh release create "v$v" bin/ForeverHiveExchange.exe bin/ForeverHiveExchange-Setup.exe --target "$env:GITHUB_SHA" --title "Forever Hive Exchange $v" --notes-file CHANGELOG.md
+          if ($LASTEXITCODE) { throw 'GitHub release failed' }
