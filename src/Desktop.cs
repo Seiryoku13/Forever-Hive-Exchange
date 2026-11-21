@@ -12,7 +12,7 @@ using System.Windows.Forms.DataVisualization.Charting;
 namespace ForeverHive {
 internal sealed class Desk : Form {
     readonly string path;string market,screen="Market",wow;int fee;long loss;bool busy,starting=true;
-    Analysis model;
+    Analysis model;bool exitRequested;
     readonly Panel nav=new Panel(),head=new Panel(),summary=new Panel(),tools=new Panel();
     readonly Label heading=new Label(),caption=new Label(),status=new Label(),metrics=new Label();
     readonly DataGridView grid=new DataGridView();
@@ -21,7 +21,7 @@ internal sealed class Desk : Form {
     readonly Dictionary<string,Button> navButtons=new Dictionary<string,Button>();readonly NotifyIcon tray=new NotifyIcon();
     readonly Timer poll=new Timer{Interval=60000},search=new Timer{Interval=220};
     static readonly Color Ink=Color.FromArgb(28,37,45),Muted=Color.FromArgb(81,101,111),Paper=Color.FromArgb(247,248,245),Gold=Color.FromArgb(239,181,70),Dark=Color.FromArgb(24,36,42);
-    public Desk(string file){
+    public Desk(string file,bool startHidden=false){
         path=file;using(var db=new Db(path)){Network.SeedNews(db);wow=db.Get("wow",App.DefaultWow);
             market=db.Get("market",db.Scalar("SELECT market FROM quote ORDER BY ts DESC LIMIT 1"));if(market=="")market="US / normal / horde";
             fee=(int)LocalSources.Num(db.Get("fee","500"));loss=LocalSources.Num(db.Get("loss","0"));
@@ -54,11 +54,16 @@ internal sealed class Desk : Form {
         if(!houses.Items.Contains(market))houses.Items.Add(market);houses.SelectedItem=market;
         houses.SelectedIndexChanged+=(s,e)=>{if(starting)return;market=(string)houses.SelectedItem;using(var db=new Db(path))db.Set("market",market);Reload();Sync(false);};
         filter.TextChanged+=(s,e)=>{search.Stop();search.Start();};search.Tick+=(s,e)=>{search.Stop();Display();};
-        poll.Tick+=(s,e)=>Sync(false);tray.Icon=SystemIcons.Information;tray.Text=Text;tray.Visible=true;tray.DoubleClick+=(s,e)=>{Show();WindowState=FormWindowState.Normal;Activate();};
+        poll.Tick+=(s,e)=>Sync(false);tray.Icon=SystemIcons.Information;tray.Text=Text;tray.Visible=true;tray.DoubleClick+=(s,e)=>Restore();
+        tray.ContextMenuStrip=new ContextMenuStrip();tray.ContextMenuStrip.Items.Add("Open Exchange",null,(s,e)=>Restore());
+        tray.ContextMenuStrip.Items.Add("Exit and stop monitoring",null,(s,e)=>{exitRequested=true;Close();});
+        FormClosing+=(s,e)=>{if(!exitRequested&&e.CloseReason==CloseReason.UserClosing){e.Cancel=true;Hide();tray.ShowBalloonTip(3000,"Forever Hive Exchange","Monitoring continues. Open or exit Exchange from the notification area.",ToolTipIcon.Info);}};
         FormClosed+=(s,e)=>{poll.Stop();search.Stop();tray.Visible=false;tray.Dispose();using(var db=new Db(path))Updates.Apply(db,Path.GetDirectoryName(path));};
         starting=false;Reload();Navigate("Market");
-        Shown+=(s,e)=>{poll.Start();Sync(false);};
+        Shown+=(s,e)=>{poll.Start();if(startHidden)BeginInvoke(new Action(Hide));Sync(false);};
     }
+    void Restore(){Show();WindowState=FormWindowState.Normal;ShowInTaskbar=true;Activate();}
+    protected override void WndProc(ref Message m){if(App.ActivateMessage!=0&&m.Msg==App.ActivateMessage){Restore();return;}base.WndProc(ref m);}
     void Reload(){using(var db=new Db(path))model=new Analysis(db,market,fee,loss);Display();}
     async void Sync(bool checkUpdates){
         if(busy)return;busy=true;status.Text="Checking saved scans and market sources…";string mk=market,folder=wow;
@@ -95,7 +100,7 @@ internal sealed class Desk : Form {
                 Add("Price history",Inspect);Add("Set alert",Watch);Add("Pricing settings",Settings);break;
             case "Portfolio":Add("Record buy",()=>Trade(true));Add("Record sale",()=>Trade(false));Add("Transactions",Transactions);break;
             case "Price alerts":Add("New alert",Watch);Add("Remove selected",RemoveWatch);break;
-            case "Sources":Add("Sync now",()=>Sync(false));Add("WoW folder",Folder);Add("Update settings",UpdateSettings);break;
+            case "Sources":Add("Sync now",()=>Sync(false));Add("WoW folder",Folder);Add("Update settings",UpdateSettings);Add("Run at sign-in",Startup);Add("Exit",()=>{exitRequested=true;Close();});break;
             case "Patch watch":Add("Open article",Inspect);break;
             case "Crafting":Add("Pricing settings",Settings);break;
             case "Inventory":Add("Sync now",()=>Sync(false));break;
@@ -179,5 +184,13 @@ internal sealed class Desk : Form {
     void Transactions(){using(var db=new Db(path))using(var f=new Form{Text="Transactions • "+market,Size=new Size(800,450),StartPosition=FormStartPosition.CenterParent}){f.Controls.Add(new DataGridView{Dock=DockStyle.Fill,ReadOnly=true,AllowUserToAddRows=false,DataSource=db.Query("SELECT datetime(ts,'unixepoch','localtime') AS Time,id AS Item,side AS Side,qty AS Quantity,unit AS [Unit copper],fee AS [Total fees] FROM trade WHERE market="+Db.Q(market)+" ORDER BY seq DESC")});f.ShowDialog(this);}}
     void Folder(){using(var f=new FolderBrowserDialog{Description="Choose your World of Warcraft _forever_ folder",SelectedPath=wow}){if(f.ShowDialog(this)!=DialogResult.OK)return;if(!Path.GetFileName(f.SelectedPath).Equals("_forever_",StringComparison.OrdinalIgnoreCase))throw new InvalidDataException("Select the _forever_ game folder.");wow=f.SelectedPath;using(var db=new Db(path))db.Set("wow",wow);Sync(false);}}
     void UpdateSettings(){var v=MessageBox.Show(this,"Automatically download checksum-verified releases and apply them when Exchange closes?\n\nYes enables updates. No selects notification only.","App updates",MessageBoxButtons.YesNoCancel);if(v==DialogResult.Cancel)return;using(var db=new Db(path))db.Set("updates",v==DialogResult.Yes?"1":"0");Sync(true);}
+    void Startup(){
+        var choice=MessageBox.Show(this,"Start Exchange in the notification area when you sign in to Windows?\n\nYes enables the shortcut. No removes it.","Background monitoring",MessageBoxButtons.YesNoCancel);
+        if(choice==DialogResult.Cancel)return;
+        string link=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup),"Forever Hive Exchange.lnk");
+        if(choice==DialogResult.Yes){dynamic shell=Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell"));dynamic shortcut=shell.CreateShortcut(link);shortcut.TargetPath=Application.ExecutablePath;shortcut.Arguments="--tray";shortcut.WorkingDirectory=AppDomain.CurrentDomain.BaseDirectory;shortcut.Save();}
+        else if(File.Exists(link))File.Delete(link);
+        using(var db=new Db(path))db.State("Run at sign-in",choice==DialogResult.Yes?"Enabled":"Disabled");Display();
+    }
 }
 }

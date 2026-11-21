@@ -3,6 +3,9 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using System.Reflection;
+using System.Threading;
+using System.Text;
+using System.Runtime.InteropServices;
 
 [assembly:AssemblyTitle("Forever Hive Exchange")]
 [assembly:AssemblyProduct("Forever Hive Exchange")]
@@ -11,6 +14,9 @@ using System.Reflection;
 namespace ForeverHive {
 internal static class App {
     public const string Version="0.1.0";
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int RegisterWindowMessage(string name);
+    [DllImport("user32.dll")] static extern bool PostMessage(IntPtr h,int m,IntPtr w,IntPtr l);
+    public static int ActivateMessage;
     public static readonly string DefaultWow=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),@"World of Warcraft\_forever_");
     public static string DataDir {
         get{
@@ -20,7 +26,8 @@ internal static class App {
     }
     [STAThread] public static int Main(string[] args){
         try{
-            var cli=args.Length>0;
+            bool tray=args.Length==1&&args[0]=="--tray";
+            var cli=args.Length>0&&!tray;
             string path=cli&&args.Length>=2?Path.GetFullPath(args[1]):Path.Combine(DataDir,"market.sqlite");
             using(var db=new Db(path)){
                 db.Init();
@@ -30,7 +37,12 @@ internal static class App {
                     return 2;
                 }
             }
-            Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);Application.Run(new Desk(path));return 0;
+            var token="ForeverHiveExchange-"+Updates.Digest(Encoding.UTF8.GetBytes(Path.GetFullPath(path).ToLowerInvariant())).Substring(0,20);
+            ActivateMessage=RegisterWindowMessage(token);bool owner;
+            using(var mutex=new Mutex(true,"Local\\"+token,out owner)){
+                if(!owner){if(!tray)PostMessage(new IntPtr(0xffff),ActivateMessage,IntPtr.Zero,IntPtr.Zero);return 0;}
+                Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);Application.Run(new Desk(path,tray));return 0;
+            }
         }catch(Exception ex){if(args.Length>0)Console.Error.WriteLine(ex.ToString());else MessageBox.Show(ex.Message,"Forever Hive Exchange");return 1;}
     }
 }

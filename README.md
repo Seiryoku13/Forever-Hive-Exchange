@@ -18,7 +18,7 @@ Portable installations keep a Data folder next to the executable. To back up, ex
 
 1. Open **Sources**. Exchange looks in the standard Battle.net World of Warcraft installation. Use **WoW folder** for another installation and select its `_forever_` directory.
 2. Choose a house in the upper right. The app selects the latest previously imported house on first start with an existing database. An empty database starts at US / normal / horde. Public roleplay house labels are inferred by the feed provider.
-3. For local market updates, keep the TSM desktop companion syncing its AppHelper file or run an Auctionator scan in game and use `/reload` or log out to flush SavedVariables. Exchange reads changed files every minute while its window is open or minimized. Each public house is checked at most hourly. **Sources** shows errors and last contact per feed. In a new installation, allow one collection cycle for the first import.
+3. For local market updates, keep the TSM desktop companion syncing its AppHelper file or run an Auctionator scan in game and use `/reload` or log out to flush SavedVariables. Exchange reads changed files every minute while running, including in the notification area after closing the window. Use Sources → Exit or the tray menu to stop monitoring. Sources → Run at sign-in enables optional background startup. Each public house is checked at most hourly. **Sources** shows errors and last contact per feed. In a new installation, allow one collection cycle for the first import.
 4. Search **Market** by name or numeric item ID. Double-click a row for a price chart and enter your actual acquisition cost for the posting floor. Daily low and high are extremes of observed minimum asks. TSM counts auctions; the public feed counts units. The date shown is the provider's timestamp.
 5. Select **Pricing settings** to enter your cut in basis points and expected nonrefundable deposit cost per unit. The initial scenario uses 5% and 0c. Set the figures for the house and strategy you use. These settings apply across markets. One gold equals 10,000 copper.
 
@@ -45,7 +45,7 @@ Portable installations keep a Data folder next to the executable. To back up, ex
 
 ## Updates and development
 
-Update checks use the public repository's latest stable GitHub release. In **Sources → Update settings**, choose automatic installation or notification only. Automatic mode verifies the release asset's SHA-256 digest and installs on exit. With network access unavailable, imports continue from local files.
+Update checks use the public repository's latest stable GitHub release. In **Sources → Update settings**, choose automatic installation or notification only. Automatic mode verifies the release asset's SHA-256 digest and installs on explicit exit. With network access unavailable, imports continue from local files.
 
 Build and run the isolated tests on Windows PowerShell:
 
