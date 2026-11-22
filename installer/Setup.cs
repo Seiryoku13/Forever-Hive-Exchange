@@ -5,8 +5,8 @@ using System.Reflection;
 using System.Threading;
 using System.Windows.Forms;
 [assembly:AssemblyTitle("Forever Hive Exchange Setup")]
-[assembly:AssemblyVersion("0.1.0.0")]
-[assembly:AssemblyFileVersion("0.1.0.0")]
+[assembly:AssemblyVersion("0.1.1.0")]
+[assembly:AssemblyFileVersion("0.1.1.0")]
 class Setup {
     static string Option(string[] args,string key,string fallback){int k=Array.IndexOf(args,key);return k>=0&&k+1<args.Length?args[k+1]:fallback;}
     static void Extract(string resource,string dest){
@@ -20,7 +20,7 @@ class Setup {
         bool quiet=Array.IndexOf(args,"--quiet")>=0,portable=Array.IndexOf(args,"--portable")>=0;
         try{
             string dest=Path.GetFullPath(Option(args,"--target",Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),@"Forever Hive Exchange\App")));
-            if(!quiet&&MessageBox.Show("Install Forever Hive Exchange 0.1.0 in\n"+dest+"?","Forever Hive Exchange Setup",MessageBoxButtons.OKCancel,MessageBoxIcon.Information)!=DialogResult.OK)return 2;
+            if(!quiet&&MessageBox.Show("Install Forever Hive Exchange 0.1.1 in\n"+dest+"?","Forever Hive Exchange Setup",MessageBoxButtons.OKCancel,MessageBoxIcon.Information)!=DialogResult.OK)return 2;
             int pid;if(int.TryParse(Option(args,"--wait",""),out pid)){try{using(var p=Process.GetProcessById(pid)){if(!p.WaitForExit(30000))throw new IOException("Close Exchange and run setup again.");}}catch(ArgumentException){}}
             Directory.CreateDirectory(dest);string exe=Path.Combine(dest,"ForeverHiveExchange.exe");
             Extract("guide",Path.Combine(dest,"README.md"));if(portable)File.WriteAllText(Path.Combine(dest,"portable.flag"),"Store the database in the adjacent Data folder.");

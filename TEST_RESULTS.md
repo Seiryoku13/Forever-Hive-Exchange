@@ -1,5 +1,9 @@
 # Test results
 
+## Version 0.1.1
+
+All 43 local checks passed. The additional coverage verifies the schema-1 migration and preserved settings, newer-schema rejection, item-name boundaries, and selection of a recent dated hotfix for an eligible candidate. The release workflow now exercises ordinary per-user Windows installation and verifies its shortcut and executable checksum.
+
 ## Windows validation • November 21, 2026
 
 `scripts/build.ps1 -Test` completed 39 regression checks. Fixtures are generated in a temporary directory with their own SQLite database. The suite does not load the installed game or write fabricated rows to a user database.

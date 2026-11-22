@@ -29,6 +29,8 @@ Portfolio buys add paid fees to basis. Sales remove proportional basis and subtr
 
 ## Reproduction
 
+Schema version 2 adds dated individual hotfix notes. Startup applies the schema inside one write transaction and rejects an unsupported newer version. Flip and investment candidates can reference an exact item-name mention in the preceding 30 days. Matching uses word boundaries and the current locale-independent item name.
+
 Run `scripts/build.ps1 -Test` with PowerShell on Windows. For headless collection use `ForeverHiveExchange.exe --sync <database-path> <_forever_-folder>`. Use `--summary <database-path>` for counts and integrity. PowerShell can use Start-Process with -Wait for the GUI-subsystem executable. Starting without arguments runs the desktop. The --tray option starts hidden.
 
 Changing VERSION on main runs the Windows release workflow. Keep installer and assembly versions aligned, rerun tests, commit source, change VERSION, and verify the release job and both assets. The app trusts the public repository as its release authority; publisher signing is a separate follow-up.

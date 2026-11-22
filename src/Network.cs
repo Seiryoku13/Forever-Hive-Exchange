@@ -91,7 +91,9 @@ internal static class Network {
             if(lines.Length==0)continue;
             string day=d.ToString("yyyy-MM-dd"),url=News+"/en-us/news/24315281#"+day;
             string notes=String.Join(" • ",lines.Take(3));if(notes.Length>350)notes=notes.Substring(0,347)+"…";
-            db.Exec("INSERT OR REPLACE INTO event VALUES("+Db.Q(url)+",'Applied',"+Db.Q("Forever hotfixes • "+m.Groups[1].Value)+","+Db.Q(day)+","+Db.Q(notes)+")");count++;
+            db.Exec("INSERT OR REPLACE INTO event VALUES("+Db.Q(url)+",'Applied',"+Db.Q("Forever hotfixes • "+m.Groups[1].Value)+","+Db.Q(day)+","+Db.Q(notes)+");DELETE FROM change_note WHERE day="+Db.Q(day)+" AND url="+Db.Q(url));
+            foreach(string line in lines.Where(x=>x.Length>=12&&x.Length<=1500))db.Exec("INSERT OR IGNORE INTO change_note VALUES("+Db.Q(day)+","+Db.Q(url)+","+Db.Q(line)+")");
+            count++;
         }
         if(count==0)throw new InvalidDataException("Could not recognize dated hotfix notes.");return count;
     }
@@ -102,7 +104,7 @@ internal static class Network {
             try{string json=Encoding.UTF8.GetString(Fetch(Feed+"/api/m/"+key,16*1024*1024));db.Transaction(delegate{int n=Overview(db,market,json);db.State(label,n+" prices received");});}
             catch(Exception ex){db.State(label,"Unavailable: "+ex.Message);}
         }
-        if(Due(db,"news-index-v2",21600)){
+        if(Due(db,"news-index-v3",21600)){
             try{string html=Encoding.UTF8.GetString(Fetch("https://news.blizzard.com/en-us/feed/world-of-warcraft",6*1024*1024));db.Transaction(delegate{int n=NewsIndex(db,html);db.State("Blizzard news",n+" Forever article links checked");});}
             catch(Exception){try{string rss=Encoding.UTF8.GetString(Fetch("https://wowcampfire.com/blue-tracker/feed.xml",4*1024*1024));db.Transaction(delegate{int n=BlueFeed(db,rss);db.State("Blizzard news",n+" official links via WoW Campfire");});}
                 catch(Exception ex){db.State("Blizzard news","Unavailable: "+ex.Message);}}

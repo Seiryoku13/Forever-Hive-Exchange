@@ -14,6 +14,18 @@ jobs:
       - name: Build and validate
         shell: powershell
         run: .\scripts\build.ps1 -Test
+      - name: Verify standard Windows installation
+        shell: powershell
+        run: |
+          $install = Join-Path $env:LOCALAPPDATA 'Forever Hive Exchange\App\ForeverHiveExchange.exe'
+          $shortcut = Join-Path ([Environment]::GetFolderPath('Programs')) 'Forever Hive Exchange.lnk'
+          $setup = (Resolve-Path 'bin/ForeverHiveExchange-Setup.exe').Path
+          $result = Start-Process $setup -ArgumentList '--quiet','--no-launch' -Wait -PassThru
+          if ($result.ExitCode -ne 0) { throw 'Standard setup failed' }
+          if ((Get-FileHash $install).Hash -ne (Get-FileHash 'bin/ForeverHiveExchange.exe').Hash) { throw 'Installed binary differs' }
+          if (!(Test-Path $shortcut)) { throw 'Start menu shortcut missing' }
+          $shell = New-Object -ComObject WScript.Shell
+          if ($shell.CreateShortcut($shortcut).TargetPath -ne $install) { throw 'Shortcut target differs' }
       - name: Publish verified artifacts
         shell: pwsh
         env:

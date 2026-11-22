@@ -6,10 +6,11 @@ using System.Linq;
 namespace ForeverHive {
 internal sealed class Listing {
     public int Id;public string Name,Source;public long Ask,Quantity,Recent,Volume,Time,Baseline,Target,Profit;public int Days,Span;
-    public bool Fresh,Invest,Flip;public decimal Trend,ROI;
+    public bool Fresh,Invest,Flip;public decimal Trend,ROI;public string PatchNote,PatchUrl;
     public string Label{get{return String.IsNullOrEmpty(Name)?"Item #"+Id:Name;}}
     public string Theme{
         get{
+            if(!String.IsNullOrEmpty(PatchNote))return PatchNote;
             string n=Label.ToLowerInvariant();
             if(n.Contains("stormshroud"))return "Stormshroud hotfix • demand uncertain";
             if(DateTime.UtcNow.Date<=new DateTime(2026,12,9)&&(n.Contains("elixir")||n.Contains("potion")||n.Contains("flask")))return "Dec 9 raid • demand hypothesis";
@@ -41,6 +42,7 @@ internal sealed class Analysis {
         string hist="SELECT id,CAST(ts/86400 AS INTEGER) AS day,min(ask) AS low FROM quote WHERE market="+m+" AND ts>="+((long)(day-21)*86400)+" AND ts<"+((long)day*86400)+" GROUP BY id,day UNION ALL SELECT id,day,low FROM daily WHERE market="+m+" AND day BETWEEN "+(day-21)+" AND "+(day-1);
         foreach(DataRow r in db.Query(hist).Rows){int id=(int)L(r,0);if(!Items.ContainsKey(id))continue;SortedDictionary<int,long> h;if(!days.TryGetValue(id,out h))days[id]=h=new SortedDictionary<int,long>();int d=(int)L(r,1);long lo=L(r,2);if(lo>0)h[d]=h.ContainsKey(d)?Math.Min(h[d],lo):lo;}
         DailyCount=(int)LocalSources.Num(db.Scalar("SELECT count(*) FROM daily WHERE market="+m));
+        var changes=db.Query("SELECT day,url,excerpt FROM change_note WHERE day>=date('now','-30 days') AND day<=date('now') ORDER BY day DESC");
         foreach(var it in Items.Values){
             SortedDictionary<int,long> h;if(!days.TryGetValue(it.Id,out h))continue;
             it.Days=h.Count;it.Span=h.Keys.Last()-h.Keys.First()+1;it.Baseline=Economy.Median(h.Values);
@@ -51,7 +53,18 @@ internal sealed class Analysis {
             bool eligible=it.Fresh&&h.Keys.Last()>=day-3&&it.Profit>0&&it.Volume!=0;
             it.Flip=eligible&&it.Days>=3&&it.ROI>=15;
             it.Invest=eligible&&it.Days>=7&&near.Count()>=2&&prev.Count()>=4&&it.Trend>=5&&it.ROI>=10;
+            if((it.Flip||it.Invest)&&!String.IsNullOrEmpty(it.Name)&&it.Name.Length>=5){
+                var note=changes.Rows.Cast<DataRow>().FirstOrDefault(r=>MentionsItem(r[2].ToString(),it.Name));
+                if(note!=null){it.PatchNote=note[0]+" • "+note[2];it.PatchUrl=note[1].ToString();}
+            }
         }
+    }
+    public static bool MentionsItem(string note,string item){
+        if(String.IsNullOrEmpty(note)||String.IsNullOrEmpty(item))return false;
+        int at=note.IndexOf(item,StringComparison.OrdinalIgnoreCase);
+        while(at>=0){int end=at+item.Length;if((at==0||!Char.IsLetterOrDigit(note[at-1]))&&(end==note.Length||!Char.IsLetterOrDigit(note[end])))return true;
+            at=note.IndexOf(item,at+1,StringComparison.OrdinalIgnoreCase);}
+        return false;
     }
     public DataTable Crafts(Db db){
         var t=new DataTable();t.Columns.Add("Profession / recipe");t.Columns.Add("Reagents");t.Columns.Add("Output net");t.Columns.Add("Margin");t.Columns.Add("Margin (c)",typeof(long));

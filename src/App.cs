@@ -9,11 +9,11 @@ using System.Runtime.InteropServices;
 
 [assembly:AssemblyTitle("Forever Hive Exchange")]
 [assembly:AssemblyProduct("Forever Hive Exchange")]
-[assembly:AssemblyVersion("0.1.0.0")]
-[assembly:AssemblyFileVersion("0.1.0.0")]
+[assembly:AssemblyVersion("0.1.1.0")]
+[assembly:AssemblyFileVersion("0.1.1.0")]
 namespace ForeverHive {
 internal static class App {
-    public const string Version="0.1.0";
+    public const string Version="0.1.1";
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int RegisterWindowMessage(string name);
     [DllImport("user32.dll")] static extern bool PostMessage(IntPtr h,int m,IntPtr w,IntPtr l);
     public static int ActivateMessage;

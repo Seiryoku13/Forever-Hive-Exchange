@@ -165,6 +165,7 @@ internal sealed class Desk : Form {
             panel.Controls.Add(new Label{Text="Unit cost (c)",AutoSize=true});var cost=Number(0,1000000000,it.Ask);panel.Controls.Add(cost);var result=new Label{AutoSize=true,Margin=new Padding(8,4,0,0)};
             Action calc=delegate{long floor=Economy.Floor((long)cost.Value,fee,loss);long price=Economy.Undercut(it.Ask);result.Text="Break-even "+Economy.Money(floor)+"   •   "+(!it.Fresh?"Await fresh price":price<floor?"Hold: undercut is below cost":"Post at "+Economy.Money(price));};
             cost.ValueChanged+=(s,e)=>calc();calc();panel.Controls.Add(result);f.Controls.Add(panel);
+            if(it.Theme!=""){var patch=new LinkLabel{Dock=DockStyle.Bottom,Height=48,AutoEllipsis=true,Padding=new Padding(12,3,12,3),Text=it.Theme};patch.LinkClicked+=(s,e)=>{string link=it.PatchUrl??(it.Theme.StartsWith("Stormshroud")?"https://worldofwarcraft.blizzard.com/en-us/news/24315281":"https://worldofwarcraft.blizzard.com/en-us/news/24303862/world-of-warcraft-forever-whats-next");if(Network.Official(link))Process.Start(link);};f.Controls.Add(patch);}
             f.Controls.Add(new Label{Dock=DockStyle.Top,Height=50,TextAlign=ContentAlignment.MiddleLeft,Padding=new Padding(12,0,0,0),Text=it.Label+"   •   ID "+it.Id+"   •   "+market+"   •   "+it.Source+"   •   "+(it.Time>0?Economy.Time(it.Time):"daily history")});f.ShowDialog(this);
         }
     }

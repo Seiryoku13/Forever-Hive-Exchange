@@ -48,6 +48,9 @@ internal sealed class Db : IDisposable {
     public void Transaction(Action act){Exec("BEGIN IMMEDIATE");try{act();Exec("COMMIT");}catch{Exec("ROLLBACK");throw;}}
     public void Dispose(){if(handle!=IntPtr.Zero){sqlite3_close(handle);handle=IntPtr.Zero;}}
     public void Init(){
+        Transaction(delegate{
+        int version=int.Parse(Scalar("PRAGMA user_version"),CultureInfo.InvariantCulture);
+        if(version>2)throw new InvalidDataException("This database requires a newer Exchange release.");
         Exec(@"CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY,v TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS item(id INTEGER PRIMARY KEY,name TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS quote(market TEXT NOT NULL,id INTEGER NOT NULL,src TEXT NOT NULL,ts INTEGER NOT NULL,ask INTEGER NOT NULL CHECK(ask>0),qty INTEGER,ref INTEGER,sold INTEGER,PRIMARY KEY(market,src,ts,id)) WITHOUT ROWID;
@@ -57,9 +60,11 @@ internal sealed class Db : IDisposable {
         CREATE TABLE IF NOT EXISTS trade(seq INTEGER PRIMARY KEY,market TEXT,id INTEGER,side TEXT,qty INTEGER,unit INTEGER,fee INTEGER,ts INTEGER);
         CREATE TABLE IF NOT EXISTS watch(market TEXT,id INTEGER,cap INTEGER,alert_ts INTEGER DEFAULT 0,PRIMARY KEY(market,id));
         CREATE TABLE IF NOT EXISTS event(url TEXT PRIMARY KEY,kind TEXT,title TEXT,day TEXT,notes TEXT);
+        CREATE TABLE IF NOT EXISTS change_note(day TEXT,url TEXT,excerpt TEXT,PRIMARY KEY(day,url,excerpt)) WITHOUT ROWID;
         CREATE TABLE IF NOT EXISTS source(name TEXT PRIMARY KEY,state TEXT,checked INTEGER);
         CREATE TABLE IF NOT EXISTS recipe(id INTEGER PRIMARY KEY,name TEXT,output INTEGER,units INTEGER,materials TEXT);
-        PRAGMA user_version=1;");
+        PRAGMA user_version=2;");
+        });
     }
     public string Get(string key,string fallback=""){var v=Scalar("SELECT v FROM meta WHERE k="+Q(key));return v==""?fallback:v;}
     public void Set(string key,string v){Exec("INSERT OR REPLACE INTO meta VALUES("+Q(key)+","+Q(v)+")");}

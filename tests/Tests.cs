@@ -29,7 +29,10 @@ internal static class Tests {
             Check(Network.Key("EU / pvp / alliance")=="eu-2-110"&&LocalSources.Market("US","Unknown")==null,"regional isolation and unknown house handling");
             long now=Db.Now;int day=(int)(now/86400);
             using(var db=new Db(file)){
-                db.Init();LocalSources.Tsm(db,Cache(now),"US");
+                db.Init();db.Set("migration-test","keep");db.Exec("DROP TABLE change_note;PRAGMA user_version=1");db.Init();
+                Check(db.Get("migration-test")=="keep"&&db.Scalar("PRAGMA user_version")=="2"&&db.Scalar("SELECT count(*) FROM change_note")=="0","v1 migration preserves existing state and creates hotfix storage");
+                db.Exec("PRAGMA user_version=99");Reject(()=>db.Init(),"newer database schema rejected");db.Exec("PRAGMA user_version=2");
+                LocalSources.Tsm(db,Cache(now),"US");
                 Check(db.Scalar("SELECT ask||','||qty||','||ref FROM quote WHERE id=2589")=="100,10,200","TSM field decoding anchored to names");
                 Check(db.Scalar("SELECT count(*) FROM quote")=="2","variant rows excluded");
                 LocalSources.Tsm(db,Cache(now),"US");Check(db.Scalar("SELECT count(*) FROM quote")=="2","repeat import is idempotent");
@@ -57,6 +60,10 @@ internal static class Tests {
                 Network.SeedNews(db);Network.NewsIndex(db,"<a href='/en-us/news/123/wow-forever-preview'>Preview</a>");
                 Check(db.Scalar("SELECT kind FROM event WHERE url LIKE '%/123'")=="Announcement","Forever news classification and canonical link");
                 Check(Network.Hotfixes(db,"<h3>November 20, 2026</h3><ul><li>Test change</li></ul>")==1,"dated hotfix parser");
+                string today=DateTime.UtcNow.ToString("MMMM d, yyyy",System.Globalization.CultureInfo.InvariantCulture);
+                Network.Hotfixes(db,"<p>"+today+"</p><ul><li>Linen Cloth requirements changed.</li></ul>");
+                Check(new Analysis(db,mk,500,0).Items[2589].Theme.Contains("requirements changed"),"fresh dated patch matched to a screened item");
+                Check(!Analysis.MentionsItem("Mooncloth stockpiles","Cloth")&&Analysis.MentionsItem("Reduced costs for Linen Cloth.","linen cloth"),"item match respects word boundaries");
                 Check(Network.BlueFeed(db,"<rss><channel><item><link>https://news.blizzard.com/en-us/article/1</link><title>Upcoming test</title></item><item><link>https://example.com</link><title>Other</title></item></channel></rss>")==1,"RSS fallback accepts official destinations only");
                 var payload=Encoding.UTF8.GetBytes("fixture");Check(Updates.Verify("sha256:"+Updates.Digest(payload),payload)&&!Updates.Verify("sha256:"+new string('0',64),payload),"updater accepts matching digest and rejects modified asset");
                 db.Set("snap/TSM/"+mk,(now-30000).ToString());db.Set("snap/Public feed/"+mk,"0");db.Exec("UPDATE quote SET ts="+(now-30000)+" WHERE src='TSM'");

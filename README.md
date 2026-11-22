@@ -38,6 +38,8 @@ Portable installations keep a Data folder next to the executable. To back up, ex
 
 ## Repeatable workflows
 
+From version 0.1.1, price history links screened items to recent official hotfixes that mention the item by name. The link includes the change date. A match supplies context for reviewing demand. The published price and ROI calculations still use the observed house data.
+
 - **Reagent restocking.** Watch materials you use regularly. Establish a price cap from the chart, then check current listings when an alert fires. Enter the fill in Portfolio so subsequent sales use your actual cost.
 - **Small-lot reversion flips.** Use Flips, inspect the chart, and check how many units are ahead of your target in game. Use a small quantity when volume is unknown. Include likely lost deposits and record the actual result.
 - **Craft to order or to observed demand.** Filter Crafting by profession, check tradeability and compare reagent purchases with vendor prices. Check that enough units are available at the displayed asks before buying a full batch.
