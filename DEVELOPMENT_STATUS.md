@@ -4,6 +4,8 @@
 
 The second Windows build adds source-linked item-level hotfix context and an atomic schema update. The regression suite now runs 43 checks. The v0.1.0 installation continued collecting while unattended for several hours, through multiple changes to the public and local TSM snapshots.
 
+Version 0.1.1 is published and passed the standard Windows installer check. The existing portable installation successfully upgraded through its own update mechanism and reopened with the release executable. Its prior market history and inventory passed a row-level comparison. Automatic release installation was enabled during this test. See TEST_RESULTS.md for the checks and the release job.
+
 ## 0.1.0 • November 21, 2026
 
 The Windows desktop, installer and 39-check suite build locally. A portable installation opened successfully and collected actual US Normal Horde data. The latest native run received the public overview, Blizzard news and dated hotfix notes. Market history, portfolio, inventory and settings persist in SQLite. Account data, personal inventory, databases and game files are excluded from git and release artifacts.

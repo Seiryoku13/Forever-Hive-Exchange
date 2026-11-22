@@ -9,7 +9,7 @@
 
 ## Next testable milestones
 
-1. Validate a full automatic update from 0.1.0 to a second published version with a populated database and portable/standard installations.
+1. Repeat the successful portable 0.1.0-to-0.1.1 upgrade under a standard installation and check background startup across a sign-in.
 2. Calibrate forecast error and holding times against the user's recorded fills. Add out-of-sample evaluation by market and item type.
 3. Add opt-in per-item depth and price-history requests with cached results, and compare listing-stack cost with likely units sold.
 4. Extend profession inputs to eligible vendor prices, actual learned recipes, binding status and alternative reagent options.

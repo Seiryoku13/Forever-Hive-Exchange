@@ -4,6 +4,12 @@
 
 All 43 local checks passed. The additional coverage verifies the schema-1 migration and preserved settings, newer-schema rejection, item-name boundaries, and selection of a recent dated hotfix for an eligible candidate. The release workflow now exercises ordinary per-user Windows installation and verifies its shortcut and executable checksum.
 
+The Windows release runner passed all 43 checks and the standard installation test. Both versioned assets were published. The existing portable 0.1.0 desktop then discovered 0.1.1, downloaded the installer from GitHub, verified the checksum, and applied it on exit. The application reopened as 0.1.1. Its executable SHA-256 matched the published release asset.
+
+An online SQLite backup taken before upgrade was compared with the restarted app using row-level set differences. All 67,674 quote rows, 22,010 item-day rows and 39 inventory rows were retained. The live trade and watch tables were empty during this upgrade. Separate fixtures cover populated trades. Schema version advanced from 1 to 2, SQLite integrity passed, and the new collector stored 339 dated hotfix excerpts in its first refresh. The public provider had supplied five distinct market snapshots before the restart.
+
+[Windows build and installation results](https://github.com/Seiryoku13/Forever-Hive-Exchange/actions/runs/44976026838) · [Published 0.1.1 assets](https://github.com/Seiryoku13/Forever-Hive-Exchange/releases/tag/v0.1.1)
+
 ## Windows validation • November 21, 2026
 
 `scripts/build.ps1 -Test` completed 39 regression checks. Fixtures are generated in a temporary directory with their own SQLite database. The suite does not load the installed game or write fabricated rows to a user database.
@@ -31,4 +37,4 @@ A first live test exposed a mismatch with the initial Blizzard website parser. T
 
 ## Further validation
 
-A second real release is needed to exercise full network upgrade installation. Live sell-through, the user's future fills and historical forecast accuracy remain unevaluated. The standard installer Start-menu and optional sign-in shortcut paths require verification in a standard installation; the verified installation used the portable mode.
+Live sell-through, the user's future fills and historical forecast accuracy remain unevaluated. The optional sign-in shortcut still needs a Windows sign-out/sign-in test. Installation was verified in standard and portable modes. The end-to-end network upgrade was verified in portable mode.
